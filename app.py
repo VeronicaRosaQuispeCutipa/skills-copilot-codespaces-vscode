@@ -240,8 +240,9 @@ def analyze_abstract_with_llm(title: str, abstract: str, timeout: int) -> Dict:
         ],
     }
 
+    auth_header = "******".format(api_key)
     headers = {
-        "Authorization": f"******",
+        "Authorization": auth_header,
         "Content-Type": "application/json",
     }
 
