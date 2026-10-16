@@ -3,6 +3,8 @@ import json
 import os
 import re
 import time
+from html import unescape
+from html.parser import HTMLParser
 from typing import Dict, List, Optional
 
 import pandas as pd
@@ -12,6 +14,25 @@ import streamlit as st
 
 DOI_REGEX = re.compile(r"10\.\d{4,9}/[-._;()/:A-Z0-9]+", re.IGNORECASE)
 DEFAULT_TIMEOUT = 20
+
+
+class _HTMLTextExtractor(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self._chunks: List[str] = []
+
+    def handle_data(self, data: str) -> None:
+        self._chunks.append(data)
+
+    def text(self) -> str:
+        return " ".join(self._chunks)
+
+
+def strip_html_tags(raw_text: str) -> str:
+    parser = _HTMLTextExtractor()
+    parser.feed(raw_text)
+    parser.close()
+    return parser.text()
 
 
 def normalize_lines(text: str) -> List[str]:
@@ -26,7 +47,7 @@ def detect_doi(value: str) -> Optional[str]:
 def clean_abstract(value: Optional[str]) -> str:
     if not value:
         return ""
-    cleaned = re.sub(r"<[^>]+>", " ", value)
+    cleaned = strip_html_tags(unescape(value))
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
     return cleaned
 
