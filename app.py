@@ -10,6 +10,7 @@ import streamlit as st
 
 DOI_PATTERN = re.compile(r"10\.\d{4,9}/[-._;()/:A-Z0-9]+", re.IGNORECASE)
 CROSSREF_API_BASE = "https://api.crossref.org/works"
+OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
 
 
 @dataclass
@@ -168,7 +169,6 @@ def safe_parse_llm_json(text: str) -> Dict[str, Any]:
 
 
 def call_openai_compatible_chat(
-    api_url: str,
     api_key: str,
     model: str,
     prompt: str,
@@ -187,7 +187,7 @@ def call_openai_compatible_chat(
         ],
     }
 
-    response = requests.post(api_url, headers=headers, json=payload, timeout=timeout)
+    response = requests.post(OPENAI_CHAT_COMPLETIONS_URL, headers=headers, json=payload, timeout=timeout)
     response.raise_for_status()
     body = response.json()
     return body["choices"][0]["message"]["content"]
@@ -196,7 +196,6 @@ def call_openai_compatible_chat(
 def analyze_rows_with_llm(
     rows: List[Dict[str, Any]],
     enable_llm: bool,
-    api_url: str,
     api_key: str,
     model: str,
     custom_instructions: str,
@@ -235,7 +234,6 @@ def analyze_rows_with_llm(
         try:
             prompt = build_llm_prompt(row, custom_instructions)
             raw_answer = call_openai_compatible_chat(
-                api_url=api_url,
                 api_key=api_key,
                 model=model,
                 prompt=prompt,
@@ -278,11 +276,6 @@ def run() -> None:
     with st.sidebar:
         st.header("Configuración LLM")
         enable_llm = st.checkbox("Activar análisis LLM", value=False)
-        api_url = st.text_input(
-            "URL endpoint chat completions",
-            value="https://api.openai.com/v1/chat/completions",
-            help="Endpoint compatible con OpenAI Chat Completions.",
-        )
         model = st.text_input("Modelo", value="gpt-4o-mini")
         api_key = st.text_input("API Key", type="password")
         custom_instructions = st.text_area(
@@ -307,8 +300,8 @@ def run() -> None:
         st.warning("No se detectaron entradas válidas.")
         return
 
-    if enable_llm and (not api_key.strip() or not api_url.strip() or not model.strip()):
-        st.error("Para el análisis LLM debes completar API Key, endpoint y modelo.")
+    if enable_llm and (not api_key.strip() or not model.strip()):
+        st.error("Para el análisis LLM debes completar API Key y modelo.")
         return
 
     st.info(f"Procesando {len(records)} registros...")
@@ -322,7 +315,6 @@ def run() -> None:
     rows = analyze_rows_with_llm(
         rows=rows,
         enable_llm=enable_llm,
-        api_url=api_url,
         api_key=api_key,
         model=model,
         custom_instructions=custom_instructions,

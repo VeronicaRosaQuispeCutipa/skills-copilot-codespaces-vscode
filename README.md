@@ -13,5 +13,5 @@ streamlit run app.py
 
 - Ingesta por lote de DOIs y/o títulos (una entrada por línea)
 - Enriquecimiento automático de metadatos desde Crossref
-- Análisis opcional con un endpoint LLM compatible con OpenAI Chat Completions
+- Análisis opcional con OpenAI Chat Completions (API Key + modelo)
 - Exportación de resultados a archivo `.xlsx`
